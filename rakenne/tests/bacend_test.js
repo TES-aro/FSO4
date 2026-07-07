@@ -55,6 +55,50 @@ describe('adding multiple entries', () => {
 	})
 })
 
+describe('missing values', () => {
+	test('no likes', async () => {
+		const newBlog = helper.notesList[0];
+		delete newBlog.likes
+		console.log('missing likes blog')
+		console.log(newBlog)
+		const res = await api.post('/api/blogs').send(newBlog)
+		console.log(res.body)
+		assert.strictEqual(res.body.likes, 0)
+	})
+
+	test('no URL', async () => {
+		const newBlog = helper.notesList[1];
+		delete newBlog.url;
+		await api.post('/api/blogs').send(newBlog).expect(400)
+	})
+
+	test('no title', async () => {
+		const newBlog = helper.notesList[1];
+		delete newBlog.title;
+		await api.post('/api/blogs').send(newBlog).expect(400)
+	})
+})
+
+describe('deleting and editing', () => {
+	test('editing', async () => {
+		const blogs = await api.get('/api/blogs');
+		const blog = blogs.body[0];
+		console.log(blog)
+		blog.likes += 1;
+		const response = await api.put(`/api/blogs/${blog.id}`).send(blog);
+		console.log(response.body)
+		assert.strictEqual(blog.likes, response.body.likes)
+	})
+
+	test('deleting by ID', async () => {
+		const blogs = await api.get('/api/blogs')
+		const id = blogs.body[0].id
+		console.log(id)
+		await api.delete(`/api/blogs/${id}`).expect(200)
+	})
+
+})
+
 
 after(async () => {
 	await mongoose.connection.close();
