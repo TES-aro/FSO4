@@ -50,9 +50,10 @@ console.log('connecting to mongoDB')
 
 const setUp = async() => {
 	await Blog.deleteMany({});
-	const firstBlog = new Blog(initialNotes)
-	await firstBlog.save()
-}
+	initialNotes.forEach( async (note) => {
+		const firstBlog = new Blog(note)
+		await firstBlog.save();
+	})}
 
 module.exports = {
 	notesList, initialNotes, setUp
