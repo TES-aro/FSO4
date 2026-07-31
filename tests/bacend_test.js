@@ -28,6 +28,12 @@ describe('basic properties', () => {
 		const response = await api.get('/api/blogs');
 		assert.strictEqual(response.body.length, helper.initialNotes.length)
 	})
+	test(`id field doesn't have a '_'`, async () => {
+		const response = await api.get('/api/blogs');
+		const keys = Object.keys(response.body[0]);
+		const matches = keys.includes("id") && !keys.includes("_id");
+		assert.strictEqual(matches, true);
+	})
 })
 
 describe('testing ADD to /api/blogs', () => {
