@@ -9,10 +9,16 @@ const getToken = request => {
 }
 
 function tokenExctractor(req, res, next) {
-	console.log("_-_in token middleware")
-	const token = getToken(req);
-	req.token = token;
-	next();
+	try{
+		const token = getToken(req);
+		const decodedToken = jwt.verify(token, process.env.SECRET);
+		console.log(decodedToken)
+		req.token = token;
+		req.user = token.user ? decodedToken.id : null
+		next();
+	} catch {
+		next();
+	}
 }
 
 module.exports = { tokenExctractor };

@@ -5,7 +5,9 @@ const Blog = require('../models/blog.js');
 
 usersRouter.post('/', async (request, response) => {
 	try{
+		console.log("in usersRouter.post")
   	const { username, name, password } = request.body
+  	console.log(username)
   	if (password.length < 3){
 	  	throw new Error('password is not strong enough')
   	}

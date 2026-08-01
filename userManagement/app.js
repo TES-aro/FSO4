@@ -13,9 +13,8 @@ const mongoUrl = `mongodb+srv://fullstack:${MONGO_PASSWORD}@cluster0.ngt2jxd.mon
 mongoose.connect(mongoUrl, { family: 4 })
 
 app.use(express.json())
-app.use(middleware.tokenExctractor)
 app.use('/api/login', login)
-app.use("/api/blogs", Blogs);
+app.use("/api/blogs", middleware.tokenExctractor, Blogs);
 app.use('/api/users', Users)
 
 module.exports = app;

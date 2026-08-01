@@ -13,8 +13,6 @@ blogsRouter.get('/', async (request, response) => {
 
 blogsRouter.post('/', async (request, response) => {
 	try {
-		console.log("------\n-----blog request token:")
-		console.log(request.token)
 		const body = request.body;
 		if(!body.url || !body.title){
 			throw new Error('missing a required field');
@@ -27,8 +25,6 @@ blogsRouter.post('/', async (request, response) => {
 		if (!user) {
 			throw new Error('missing userID')
 		}
-		console.log("token's user:")
-		console.log(user)
   	const blog = new Blog({
 		 	title: body.title,
 		 	author: body.author,
@@ -37,10 +33,11 @@ blogsRouter.post('/', async (request, response) => {
 			userID: user.id
   	})
   	const result = await blog.save()
-  	console.log("blogsRouter.post result:")
-  	console.log(result)
   	response.status(201).json(result)
 	} catch (e) {
+		console.log("\n\n\n___ error ___")
+		console.log(e)
+		console.log("___")
 		if (e.name === 'JsonWebTokenError'){
 			response.status(401).json({error: 'tokken missing or invalid'})
 			return
@@ -52,9 +49,22 @@ blogsRouter.post('/', async (request, response) => {
 blogsRouter.delete('/:id', async (req, res) => {
 	try{
 		const id = req.params.id;
-		const response = await Blog.findByIdAndDelete(id);
-		res.status(200).send(response.body)
+		if (!req.token){
+			return res.status(401).json({error: 'invalid token'})
+		}
+		const decodedToken = jwt.verify(req.token, process.env.SECRET)
+		if (!decodedToken.id) {
+			return res.status(401).json({error: 'invalid token'})
+		}
+		const response = await Blog.findById(id);
+		if (response.userID.toString() !== decodedToken.id){
+			return res.status(401).json({error: 'invalid token'})
+		}
+		const delResponse = await Blog.findByIdAndDelete(id);
+		res.status(200).send(delResponse.body)
 	} catch (e) {
+		console.log("\n\n___ error ___")
+		console.log(e)
 		res.status(400).send(e)
 	}
 })
@@ -65,10 +75,8 @@ blogsRouter.put('/:id', async (req, res) => {
 		const updatedBlog = req.body;
 		// mutaatio, mutta eh
 		delete updatedBlog.id;
-		console.log('-----')
 		const response = await Blog.findByIdAndUpdate(id, updatedBlog, {
 			runValidators: 'true', returnDocument: 'after'})
-		console.log(response)
 		res.status(200).send(response)
 	} catch (e) {
 		res.status(400).send(e)

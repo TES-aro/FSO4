@@ -10,6 +10,16 @@ const User = require('../models/user.js');
 
 const api = supertest(app);
 
+const login = async () => {
+	const info = {
+		username: 'root',
+		password: 'salasana'
+	}
+	const response = await api.post('/api/login').send(info)
+	console.log('login body:')
+	console.log(response.body)
+	return response.body.token;
+}
 
 beforeEach( async () => {
 	await User.deleteMany({})
@@ -23,11 +33,16 @@ beforeEach( async () => {
 	rootId = response.body.id;
 	await Blog.deleteMany({})
 	console.log('clear')
-	await Blog.insertMany(helper.initialNotes)
-	//await helper.initialNotes.forEach(async (note) => {
-	//	let newBlog = new Blog(note)
-	//	await newBlog.save()
-	//})
+	const newBlog = helper.initialNotes[0]
+	newBlog.userID = rootId;
+	const blog = new Blog({
+		title: newBlog.title,
+		author: newBlog.author,
+		url: newBlog.url,
+		likes: newBlog.likes,
+		userID: rootId
+	})
+	await blog.save()
 	console.log('added initial blogs')
 })
 
@@ -55,7 +70,7 @@ describe('testing token', () => {
 	})
 })
 
-describe.only('require token for actions', () => {
+describe('require token for actions', () => {
 	test('adding a blog', async () => {
 		const info = {
 			username: 'root',
@@ -66,7 +81,21 @@ describe.only('require token for actions', () => {
 		const blog = helper.notesList[0];
 		const res = await api.post('/api/blogs').auth(token, {type: 'bearer'}).send(blog).expect(201)
 	})
-})
+	test('removing a blog with improper token', async () => {
+		const blogs = await api.get('/api/blogs')
+		const res = await api.del(`/api/blogs/${blogs.body[0].id}`).expect(401)
+	})
+	test('removing a blog', async () => {
+		const blogs = await api.get('/api/blogs')
+		const info = {
+			username: 'root',
+			password: 'salasana'
+		}
+		const loginRes = await api.post('/api/login').send(info)
+		const token = loginRes.body.token;
+		const res = await api.del(`/api/blogs/${blogs.body[0].id}`).auth(token, {type: 'bearer'}).expect(200)
+		console.log(res.body)
+	})})
 
 describe('basic properties', () => {
 	test('returns as JSON', async () => {
@@ -85,11 +114,12 @@ describe('basic properties', () => {
 })
 
 describe('testing ADD to /api/blogs', () => {
-	test('adding', async () => {
+	test.only('adding', async () => {
+		const token = await login();
 		const originaResponse = await api.get('/api/blogs')
 		console.log(originaResponse.body)
 		const newBlog = helper.notesList[0];
-		await api.post('/api/blogs').send(newBlog).expect(201);
+		await api.post('/api/blogs').auth(token, {type: 'bearer'}).send(newBlog).expect(201);
 		const response = await api.get('/api/blogs');
 		console.log(`response length: ${response.body.length}`)
 		console.log(`expected length: ${helper.initialNotes.length} + 1`)
@@ -99,10 +129,11 @@ describe('testing ADD to /api/blogs', () => {
 
 describe('adding multiple entries', () => {
 	test('adding multiple', async () => {
+		const token = await login();
 		const originalResponse = await api.get('/api/blogs');
 		console.log(`original size: ${originalResponse.body.length}`)
 		const blogList = helper.notesList;
-		const promiseArray = blogList.map(blog => api.post('/api/blogs').send({title: blog.title, author: blog.author, url: blog.url, likes: blog.likes}))
+		const promiseArray = blogList.map(blog => api.post('/api/blogs').auth(token, {type: 'bearer'}).send({title: blog.title, author: blog.author, url: blog.url, likes: blog.likes}))
 		await Promise.all(promiseArray)
 		const endResponse = await api.get('/api/blogs');
 		assert.strictEqual(endResponse.body.length, (blogList.length + 1))
@@ -111,44 +142,49 @@ describe('adding multiple entries', () => {
 
 describe('missing values', () => {
 	test('no likes', async () => {
+		const token = await login();
 		const newBlog = helper.notesList[0];
 		delete newBlog.likes
 		console.log('missing likes blog')
 		console.log(newBlog)
-		const res = await api.post('/api/blogs').send(newBlog)
+		const res = await api.post('/api/blogs').auth(token, {type: 'bearer'}).send(newBlog)
 		console.log(res.body)
 		assert.strictEqual(res.body.likes, 0)
 	})
 
 	test('no URL', async () => {
+		const token = await login();
 		const newBlog = helper.notesList[1];
 		delete newBlog.url;
-		await api.post('/api/blogs').send(newBlog).expect(400)
+		await api.post('/api/blogs').auth(token, {type: 'bearer'}).send(newBlog).expect(400)
 	})
 
 	test('no title', async () => {
+		const token = await login()
 		const newBlog = helper.notesList[1];
 		delete newBlog.title;
-		await api.post('/api/blogs').send(newBlog).expect(400)
+		await api.post('/api/blogs').auth(token, {type: 'bearer'}).send(newBlog).expect(400)
 	})
 })
 
 describe('deleting and editing', () => {
 	test('editing', async () => {
+		const token = await login()
 		const blogs = await api.get('/api/blogs');
 		const blog = blogs.body[0];
 		console.log(blog)
 		blog.likes += 1;
-		const response = await api.put(`/api/blogs/${blog.id}`).send(blog);
+		const response = await api.put(`/api/blogs/${blog.id}`).auth(token, {type: 'bearer'}).send(blog);
 		console.log(response.body)
 		assert.strictEqual(blog.likes, response.body.likes)
 	})
 
 	test('deleting by ID', async () => {
+		const token = await login()
 		const blogs = await api.get('/api/blogs')
 		const id = blogs.body[0].id
 		console.log(id)
-		await api.delete(`/api/blogs/${id}`).expect(200)
+		await api.del(`/api/blogs/${id}`).auth(token, {type: 'bearer'}).expect(200)
 	})
 
 })
