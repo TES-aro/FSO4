@@ -13,6 +13,8 @@ blogsRouter.get('/', async (request, response) => {
 
 blogsRouter.post('/', async (request, response) => {
 	try {
+		console.log("------\n-----blog request token:")
+		console.log(request.token)
 		const body = request.body;
 		if(!body.url || !body.title){
 			throw new Error('missing a required field');
@@ -21,11 +23,12 @@ blogsRouter.post('/', async (request, response) => {
 		if (!decodedToken.id) {
 			return response.status(401).json({error: 'invalid token'});
 		}
-		const user = await user.findById(decodedToken.id);
+		const user = await Users.findById(decodedToken.id);
 		if (!user) {
 			throw new Error('missing userID')
 		}
-		console.log(users[0])
+		console.log("token's user:")
+		console.log(user)
   	const blog = new Blog({
 		 	title: body.title,
 		 	author: body.author,
@@ -34,6 +37,8 @@ blogsRouter.post('/', async (request, response) => {
 			userID: user.id
   	})
   	const result = await blog.save()
+  	console.log("blogsRouter.post result:")
+  	console.log(result)
   	response.status(201).json(result)
 	} catch (e) {
 		if (e.name === 'JsonWebTokenError'){

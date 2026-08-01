@@ -10,7 +10,6 @@ const User = require('../models/user.js');
 
 const api = supertest(app);
 
-let rootId;
 
 beforeEach( async () => {
 	await User.deleteMany({})
@@ -30,6 +29,43 @@ beforeEach( async () => {
 	//	await newBlog.save()
 	//})
 	console.log('added initial blogs')
+})
+
+describe('testing token', () => {
+	test('login', async () => {
+		const info = {
+			username: 'root',
+			password: 'salasana'
+		}
+		const res = await api.post('/api/login').send(info);
+		console.log("login body:")
+		console.log(res.body)
+		let matches = false
+		if (res.body.token){
+			matches = true;
+		}
+		assert.equal(matches, true);
+	})
+	test('improper password', async () => {
+		const info = {
+			username: 'root',
+			password: 'WrongPassword'
+		}
+		await api.post('/api/login').send(info).expect(401);
+	})
+})
+
+describe.only('require token for actions', () => {
+	test('adding a blog', async () => {
+		const info = {
+			username: 'root',
+			password: 'salasana'
+		}
+		const loginRes = await api.post('/api/login').send(info);
+		const token = loginRes.body.token;
+		const blog = helper.notesList[0];
+		const res = await api.post('/api/blogs').auth(token, {type: 'bearer'}).send(blog).expect(201)
+	})
 })
 
 describe('basic properties', () => {

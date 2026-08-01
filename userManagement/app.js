@@ -6,7 +6,6 @@ const Users = require('./controllers/users.js');
 const login = require('./controllers/login.js');
 const middleware = require('./utils/middleware.js');
 
-
 const app = express()
 
 const mongoUrl = `mongodb+srv://fullstack:${MONGO_PASSWORD}@cluster0.ngt2jxd.mongodb.net/?appName=Cluster0`
@@ -14,7 +13,7 @@ const mongoUrl = `mongodb+srv://fullstack:${MONGO_PASSWORD}@cluster0.ngt2jxd.mon
 mongoose.connect(mongoUrl, { family: 4 })
 
 app.use(express.json())
-app.use(middleware.tokenExtractor)
+app.use(middleware.tokenExctractor)
 app.use('/api/login', login)
 app.use("/api/blogs", Blogs);
 app.use('/api/users', Users)

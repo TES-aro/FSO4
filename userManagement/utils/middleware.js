@@ -8,10 +8,11 @@ const getToken = request => {
 	return null
 }
 
-const tokenExctractor = (req, res, next) => {
+function tokenExctractor(req, res, next) {
+	console.log("_-_in token middleware")
 	const token = getToken(req);
 	req.token = token;
 	next();
 }
 
-module.exports = {tokenExctractor};
+module.exports = { tokenExctractor };
